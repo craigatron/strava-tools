@@ -67,7 +67,8 @@ def _try_rate_limit_request(url: str, headers: Dict[str, str]):
             print(f'rate limited request for {url}, waiting 60 seconds')
             time.sleep(60)
         else:
-            raise Exception(f'unexpected error in response {resp}')
+            raise Exception(
+                f'unexpected error in response for url: {url}: {resp}')
 
 
 def _update_activity_queue(access_token):
@@ -96,7 +97,9 @@ def _update_activity_queue(access_token):
             print(f'done after {page - 1} pages')
             break
 
-        all_activities.extend([a for a in activities if a['type'] == 'Run'])
+        # TODO(craigatron): this excludes manual activities (e.g. dreadmill)
+        all_activities.extend(
+            [a for a in activities if a['type'] == 'Run' and not a['manual']])
         page += 1
 
     print(f'found {len(all_activities)} activities')
@@ -120,6 +123,12 @@ def _download_activities(access_token):
     headers = {'Authorization': f'Bearer {access_token}'}
     for activity in db.collection(QUEUE_KEY).stream():
         activity_dict = activity.to_dict()
+
+        if activity_dict['manual']:
+            print(f'skipping manual activity {activity_dict["id"]}')
+            activity.reference.delete()
+            continue
+
         # TODO(craigatron): can we get an upload date or something?  if you upload an old activity this will skip it
         activity_start_date = dateutil.parser.isoparse(
             activity_dict['start_date']).date()

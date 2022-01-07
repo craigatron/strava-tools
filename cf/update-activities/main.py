@@ -67,6 +67,7 @@ def _try_rate_limit_request(url: str, headers: Dict[str, str]):
             print(f'rate limited request for {url}, waiting 60 seconds')
             time.sleep(60)
         else:
+            # TODO: this should also catch 401s and refresh the access token
             raise Exception(
                 f'unexpected error in response for url: {url}: {resp}')
 

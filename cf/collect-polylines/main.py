@@ -31,11 +31,13 @@ def collect_polylines(event, context):
         'polylines': polylines,
         'total_mi': total_mi,
         'day_of_year': day_of_year,
-        'days_active': len(activity_dates)
+        'days_active': len(activity_dates),
+        'last_updated': datetime.datetime.now(tz=pytz.utc).isoformat(),
     }
 
     out_blob = output_bucket.blob(f'{YEAR}_stats.json')
-    out_blob.upload_from_string(json.dumps(stats_dict))
+    out_blob.upload_from_string(json.dumps(stats_dict),
+                                content_type='application/json')
     out_blob.make_public()
 
 

@@ -85,13 +85,18 @@ def _update_activity_queue(access_token):
 
     headers = {'Authorization': f'Bearer {access_token}'}
 
-    print(f'fetching activities between {last_sync_time} and {current_time}')
+    # Rewind a few hours in case an activity was uploaded that started before the previous sync time but finished after.
+    oldest_activity_time = last_sync_time - (60 * 60 * 6)
+    print(
+        f'fetching activities between {oldest_activity_time} and {current_time}'
+    )
+
     page = 1
     all_activities = []
     while True:
         print(f'fetching page {page}')
         activities = _try_rate_limit_request(
-            f'https://www.strava.com/api/v3/athlete/activities?before={current_time}&after={last_sync_time}&page={page}',
+            f'https://www.strava.com/api/v3/athlete/activities?before={current_time}&after={oldest_activity_time}&page={page}',
             headers=headers)
 
         if not activities:

@@ -1,5 +1,6 @@
 import datetime
 import json
+import logging
 import os
 
 import pytz
@@ -17,18 +18,34 @@ output_bucket = storage_client.bucket(OUTPUT_BUCKET)
 
 
 def collect_polylines(event, context):
-    polylines = []
+    logging.getLogger().setLevel(logging.INFO)
+    logging.info(f'triggered with event {event}')
+
+    activities = []
     total_mi = 0
     activity_dates = set()
     for blob in input_bucket.list_blobs(prefix=f'{YEAR}/'):
         activity = json.loads(blob.download_as_text())
-        activity_dates.add(activity['activity']['start_date_local'][:10])
-        polylines.append(activity['activity']['map']['summary_polyline'])
-        total_mi += (METERS_TO_MILES * activity['activity']['distance'])
+        distance_mi = METERS_TO_MILES * activity['activity']['distance']
+        date = activity['activity']['start_date_local'][:10]
+        activity_dates.add(date)
+        activities.append({
+            'id':
+            activity['activity']['id'],
+            'name':
+            activity['activity']['name'],
+            'polyline':
+            activity['activity']['map']['summary_polyline'],
+            'distance_mi':
+            distance_mi,
+            'date':
+            date,
+        })
+        total_mi += distance_mi
 
     day_of_year = datetime.datetime.now(tz=EASTERN_TZ).timetuple().tm_yday
     stats_dict = {
-        'polylines': polylines,
+        'activities': activities,
         'total_mi': total_mi,
         'day_of_year': day_of_year,
         'days_active': len(activity_dates),
